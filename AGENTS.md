@@ -33,6 +33,7 @@ CI runs both on every PR (`.github/workflows/self-test.yml`), with the self-test
 - Prompts are files in `agents/prompts/`, never strings inside a script.
 - Gates never branch on an app's name. An app-specific need becomes a key in that app's `.fleet.yaml`.
 - No app code and no Router in this repo.
+- Never write `.fleet/approved-plan.sha` in an app repo; only `plan-approve.sh --approve`, run by Connor, does.
 - Every gate change comes with a self-test case against `fixtures/sample-app/` that fails without the change.
 - Bash stays compatible with 3.2: no associative arrays, `mapfile`, `${var,,}`, or `|&`.
 - YAML is read only through `yaml_to_json` in `agents/gates/lib/yaml.sh`; everything after that is jq.

@@ -58,7 +58,17 @@ An app tells fleet where its commands and docs are; fleet never hardcodes them.
 It reads every output line that is a JSON object:
 
 - `{"name": "...", "passed": false, "failure": "..."}` is one finding with id `<step>:<name>`.
-- `{"name": "...", "failures": [{"vector", "input", "expected", "actual"}]}` is one finding per failure, with id `<step>:<name>:<vector>`.
+- `{"name": "...", "failures": [{"vector", "input", "expected", "actual"}]}` is one finding per failure, with id `<step>:<name>:<vector>@<input>` so each failing case is its own finding.
 
 A command that exits non-zero without printing a failed result line is one finding named after the step, carrying the last 20 lines of its output.
 Vespers' `app test` and `app vectors` and the sample app print this shape already.
+
+## Plan approval
+
+`plan-approve.sh --approve` hashes the plan as committed at `--sha` (the `plan` key in `.fleet.yaml`, default `plan.md`) and commits `.fleet/approved-plan.sha` on its own, leaving any other staged work untouched.
+It refuses while the plan has uncommitted edits, so what Connor read is what gets approved.
+`plan-approve.sh --check`, the default, fails with `plan-missing`, `plan-unapproved` or `plan-drifted`.
+Every later gate calls `plan_require_approved` first and exits 2 unless the plan at its SHA matches the record.
+
+The record is an ordinary committed file, so the gate cannot tell who wrote it.
+Agents never write `.fleet/approved-plan.sha`, and `RISK.yaml` marks `.fleet/**` high so a PR touching it is flagged.

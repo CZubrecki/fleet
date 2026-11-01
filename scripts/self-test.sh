@@ -89,6 +89,51 @@ test_dispatcher() {
     expect_exit "fleet: run is not available before C8" 2 "$fleet" run feature
 }
 
+approve_plan() {
+    "$fleet" gate plan-approve --repo "$1" --sha HEAD --approve --out "$work/approve-out" >/dev/null 2>&1
+}
+
+test_plan_approval() {
+    local evidence="$app/.fleet/out/plan-approve/evidence.json" before
+    expect_exit "plan: an unapproved plan fails the check" 1 "$fleet" gate plan-approve --repo . --sha HEAD --check
+    expect_evidence "plan: the finding is plan-unapproved" "$evidence" '[.findings[].id] == ["plan-unapproved"]'
+    expect_exit "plan: behaviour refuses to run before approval" 2 "$fleet" gate behaviour --repo . --sha HEAD
+    expect_log "plan: behaviour says why" 'has not been approved'
+
+    echo "An unreviewed edit." >>"$app/plan.md"
+    expect_exit "plan: an uncommitted plan cannot be approved" 2 "$fleet" gate plan-approve --repo . --sha HEAD --approve
+    git -C "$app" checkout -q -- plan.md
+
+    echo "// staged elsewhere" >>"$app/Sources/SampleCore/Counter.swift"
+    git -C "$app" add Sources/SampleCore/Counter.swift
+    before="$(git -C "$app" rev-parse HEAD)"
+    expect_exit "plan: --approve passes" 0 "$fleet" gate plan-approve --repo . --sha HEAD --approve
+    expect_exit "plan: --approve commits only the record" 0 \
+        test "$(git -C "$app" diff --name-only "$before" HEAD)" == ".fleet/approved-plan.sha"
+    expect_exit "plan: other staged work is left staged and uncommitted" 0 \
+        test "$(git -C "$app" diff --cached --name-only)" == "Sources/SampleCore/Counter.swift"
+    git -C "$app" reset -q --hard
+    expect_evidence "plan: approval evidence is bound to the approval commit" "$evidence" \
+        ".sha == \"$(git -C "$app" rev-parse HEAD)\" and .verdict == \"pass\""
+
+    before="$(git -C "$app" rev-parse HEAD)"
+    expect_exit "plan: approving again is a no-op" 0 "$fleet" gate plan-approve --repo . --sha HEAD --approve
+    expect_exit "plan: a second approval makes no commit" 0 test "$(git -C "$app" rev-parse HEAD)" == "$before"
+    expect_exit "plan: --check passes once approved" 0 "$fleet" gate plan-approve --repo . --sha HEAD --check
+}
+
+test_plan_drift() {
+    local evidence="$app/.fleet/out/plan-approve/evidence.json"
+    echo "3. Also clamp reset." >>"$app/plan.md"
+    commit_all "Widen the plan"
+    expect_exit "plan: a plan changed after approval fails the check" 1 "$fleet" gate plan-approve --repo . --sha HEAD
+    expect_evidence "plan: the finding is plan-drifted" "$evidence" '[.findings[].id] == ["plan-drifted"]'
+    expect_exit "plan: behaviour refuses to run on a drifted plan" 2 "$fleet" gate behaviour --repo . --sha HEAD
+    expect_log "plan: behaviour names the drift" 'changed after approval'
+    expect_exit "plan: re-approving the new plan passes" 0 "$fleet" gate plan-approve --repo . --sha HEAD --approve
+    expect_exit "plan: behaviour runs again after re-approval" 0 "$fleet" gate behaviour --repo . --sha HEAD
+}
+
 test_behaviour_on_sample_app() {
     local evidence="$app/.fleet/out/behaviour/evidence.json" head
     head="$(git -C "$app" rev-parse HEAD)"
@@ -96,7 +141,7 @@ test_behaviour_on_sample_app() {
     expect_exit "behaviour: fails on the planted vector" 1 "$fleet" gate behaviour --repo . --sha HEAD
     expect_evidence "behaviour: evidence is bound to the full HEAD sha" "$evidence" ".sha == \"$head\" and .dirty == false"
     expect_evidence "behaviour: the only finding is the planted vector" "$evidence" \
-        '.verdict == "fail" and ([.findings[].id] == ["vectors:floor:stops-at-zero"])'
+        '.verdict == "fail" and ([.findings[].id] == ["vectors:floor:stops-at-zero@decrement"])'
     expect_evidence "behaviour: the finding says what was expected" "$evidence" \
         '.findings[0].note == "input decrement: expected 0, got -1" and .findings[0].evidence == "behaviour/vectors.log"'
     expect_exit "behaviour: the cited log sits beside the evidence" 0 grep -q stops-at-zero "$app/.fleet/out/behaviour/vectors.log"
@@ -132,6 +177,19 @@ test_behaviour_contract() {
     init_repo "$repo"
     evidence="$work/contract-out/behaviour/evidence.json"
 
+    expect_exit "contract: a repo without a plan fails the plan check" 1 \
+        "$fleet" gate plan-approve --repo "$repo" --sha HEAD --out "$work/contract-out"
+    expect_evidence "contract: the finding is plan-missing" "$work/contract-out/plan-approve/evidence.json" \
+        '[.findings[].id] == ["plan-missing"]'
+    expect_exit "contract: a missing plan cannot be approved" 2 \
+        "$fleet" gate plan-approve --repo "$repo" --sha HEAD --approve --out "$work/contract-out"
+    expect_exit "contract: plan-approve rejects unknown arguments" 2 \
+        "$fleet" gate plan-approve --repo "$repo" --sha HEAD --approved --out "$work/contract-out"
+    echo "# Plan" >"$repo/plan.md"
+    git -C "$repo" add plan.md
+    git -C "$repo" commit -qm "Plan"
+    approve_plan "$repo"
+
     expect_exit "contract: --sha is required" 2 "$fleet" gate behaviour --repo "$repo"
     expect_exit "contract: unknown arguments cannot run" 2 "$fleet" gate behaviour --repo "$repo" --sha HEAD --bogus
     expect_exit "contract: a failing command without result lines fails" 1 \
@@ -158,7 +216,9 @@ test_behaviour_contract() {
 setup_app
 test_fixture
 test_dispatcher
+test_plan_approval
 test_behaviour_on_sample_app
+test_plan_drift
 test_behaviour_contract
 
 printf '\n%d passed, %d failed\n' "$passed" "$failed"

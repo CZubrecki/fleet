@@ -16,7 +16,7 @@ json_result_findings() {
             (.name // "unnamed") as $report
             | .failures[]
             | {
-                id: "\($step):\($report):\(.vector // .name // "unnamed")",
+                id: ("\($step):\($report):\(.vector // .name // "unnamed")" + (if .input == null then "" else "@\(.input)" end)),
                 severity: "high",
                 where: "\($report)/\(.vector // .name // "unnamed")",
                 evidence: $evidence,

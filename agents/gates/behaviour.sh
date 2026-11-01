@@ -7,6 +7,7 @@ set -euo pipefail
 gate_init behaviour "$@"
 [[ ${#GATE_ARGS[@]} -eq 0 ]] || gate_error "unknown argument: ${GATE_ARGS[0]}"
 gate_load_config
+plan_require_approved
 
 # run_step <step> <command>: runs one .fleet.yaml command in the repo and records a finding per failed result.
 run_step() {

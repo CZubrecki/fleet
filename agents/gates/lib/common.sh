@@ -14,6 +14,8 @@ FLEET_ROOT="$(cd "$FLEET_LIB/../../.." && pwd)"
 . "$FLEET_LIB/git.sh"
 # shellcheck source=agents/gates/lib/yaml.sh
 . "$FLEET_LIB/yaml.sh"
+# shellcheck source=agents/gates/lib/plan.sh
+. "$FLEET_LIB/plan.sh"
 
 GATE=""
 REPO=""
