@@ -1,0 +1,24 @@
+# Path globs to risk tiers for an app PR. The first rule with a matching path sets the tier for that file;
+# a PR takes the highest tier of any file it touches. Phase 2 only annotates PRs with the tier.
+default: medium
+rules:
+  - tier: high
+    paths:
+      - ".github/**"
+      - "fastlane/**"
+      - "**/*.entitlements"
+      - "**/Info.plist"
+      - "**/*.xcodeproj/**"
+      - "**/*Store*.swift"
+      - "**/*Persistence*/**"
+      - "**/*Adapters*/**"
+      - "**/Package.swift"
+      - "**/Package.resolved"
+      - ".fleet.yaml"
+      - ".fleet/**"
+  - tier: low
+    paths:
+      - "docs/**"
+      - "design/**"
+      - "**/*.md"
+      - "**/Resources/Scenarios/**"

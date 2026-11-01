@@ -1,0 +1,28 @@
+name: Self-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: self-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck --version
+      - run: find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck ops-cli/fleet
+
+  gates:
+    name: Gates against the sample app
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version && jq --version && ruby --version
+      # /bin first so the gates run on the macOS system bash 3.2 and system Ruby, the oldest stack they support.
+      - run: env PATH="/bin:/usr/bin:$PATH" scripts/self-test.sh

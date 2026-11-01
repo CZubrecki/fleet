@@ -1,0 +1,5 @@
+[
+  { "name": "increments", "start": { "count": 0, "limit": 10 }, "actions": ["increment", "increment"], "expected": 2 },
+  { "name": "stops-at-limit", "start": { "count": 9, "limit": 10 }, "actions": ["increment", "increment"], "expected": 10 },
+  { "name": "resets", "start": { "count": 7, "limit": 10 }, "actions": ["reset"], "expected": 0 }
+]
