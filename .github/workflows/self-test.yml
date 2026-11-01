@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: shellcheck --version
-      - run: find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck ops-cli/fleet
+      - run: find . -name '*.sh' -not -path './.git/*' -not -path '*/.build/*' -print0 | xargs -0 shellcheck ops-cli/fleet
 
   gates:
     name: Gates against the sample app

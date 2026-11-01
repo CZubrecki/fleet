@@ -1,0 +1,4 @@
+app: sample
+test: swift run --package-path . app test all
+vectors: swift run --package-path . app vectors all
+architecture_check: scripts/check-architecture.sh

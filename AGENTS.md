@@ -22,7 +22,7 @@ The plan it implements is `docs/prd/phase-2-gate-loop.md`.
 | Task | Command |
 | --- | --- |
 | Self-test | `scripts/self-test.sh` |
-| Lint | `shellcheck ops-cli/fleet $(find . -name '*.sh' -not -path './.git/*')` |
+| Lint | `find . -name '*.sh' -not -path './.git/*' -not -path '*/.build/*' -print0 \| xargs -0 shellcheck ops-cli/fleet` |
 | Run a gate on an app | `ops-cli/fleet gate <name> --repo <path> --sha <sha>` |
 
 CI runs both on every PR (`.github/workflows/self-test.yml`), with the self-test on the macOS system bash 3.2 and system Ruby.
