@@ -1,0 +1,3 @@
+[
+  { "name": "stops-at-zero", "start": { "count": 0, "limit": 10 }, "actions": ["decrement"], "expected": 0 }
+]

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+gates="$root/agents/gates"
+
+usage() {
+    cat <<EOF
+usage: fleet gate <name> --repo <path> --sha <sha> [--out <dir>] [gate options]
+       fleet gates
+       fleet run <profile> --repo <path> --task <file>
+
+Exit codes: 0 pass, 1 fail, 2 could not run.
+EOF
+}
+
+list_gates() {
+    local script
+    for script in "$gates"/*.sh; do
+        [[ -e "$script" ]] || continue
+        basename "$script" .sh
+    done
+}
+
+case "${1:-}" in
+    gate)
+        name="${2:-}"
+        if [[ -z "$name" || ! -x "$gates/$name.sh" ]]; then
+            echo "fleet: unknown gate '${name}'. Known gates:" >&2
+            list_gates >&2
+            exit 2
+        fi
+        shift 2
+        exec "$gates/$name.sh" "$@"
+        ;;
+    gates)
+        list_gates
+        ;;
+    run)
+        echo "fleet: profiles are not runnable yet (Phase 2 checkpoint C8)." >&2
+        exit 2
+        ;;
+    -h|--help|help)
+        usage
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac
