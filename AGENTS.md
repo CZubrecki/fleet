@@ -12,6 +12,7 @@ The plan it implements is `docs/prd/phase-2-gate-loop.md`.
 | `agents/prompts/` | Every prompt a model slot runs, versioned as files |
 | `agents/profiles/` | Step lists the `fleet run` runner executes |
 | `agents/memory/<app>/` | Rules distilled from Connor's PR comments, one folder per app |
+| `docs/status.md` | Where Phase 2 stands, the next checkpoint, and decisions owed; read it first and update it at the end of each checkpoint |
 | `docs/knowledge/<app>/` | Links to an app's PRDs, design files and artboard map |
 | `ops-cli/fleet` | The entrypoint that dispatches to gates and profiles |
 | `fixtures/sample-app/` | A small Swift package every gate is tested against |
